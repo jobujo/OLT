@@ -1,0 +1,91 @@
+#!/usr/bin/python3.7
+import sys
+import requests
+import os
+import subprocess as sp
+DataBaseURL = ("https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf")
+FetchUserHomePath = os.popen("echo $HOME").read().rstrip()
+CheckPathLocation = ("{}/.olt/.OLTDataBase.txt".format(FetchUserHomePath))
+DataBaseURL = ("https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf")
+CheckDirLocation = ("{}/.olt".format(FetchUserHomePath))
+AcceptedAnswers = ["yes","ya","y","yep",""]
+ChatMessages = [""]
+ScanMessages = ["SUCCESS: DATABASE FOUND!", "ERROR: NO DATABASE FOUND!", "SUCCESS: DIRECTORY FOUND!", "ERROR: NO DIRECTORY FOUND!"]
+
+#Check for .olt dir!
+def FetchAndWriteData():
+    File = open(CheckPathLocation, "w+")
+    RequestDB = requests.get(DataBaseURL)
+    global ResponseDB
+    ResponseDB = RequestDB.text
+    File.write(ResponseDB)
+def MakeDir():
+    os.makedirs(CheckDirLocation)
+def MakeDB():
+    os.mknod(CheckPathLocation)
+def SearchDB():
+    File2 = open(CheckPathLocation, "r")
+    OUI = sys.argv[1]
+    OUI2 = OUI.upper()
+    for i in File2:
+        if OUI2 in i:
+            print("\n\nFOUND: {}".format(i))
+        else:
+            None
+#Check to see if the directory exists!
+#If it does than check to see if the DB is there!
+#If the DB is there than check to see if the DB os populated with data!
+#If it meets all the critera search the DB for the OUI
+if os.path.exists(CheckDirLocation):
+    sp.call("clear",shell=True)
+    print(ScanMessages[2])
+    if os.path.exists(CheckPathLocation):
+        print(ScanMessages[0])
+        if os.stat(CheckPathLocation).st_size == 0:
+            print("ERROR: DATABASE NOT POPULATED!")
+        SearchDB()
+        #Make Function for scanning db for oui
+    elif not os.path.exists(CheckPathLocation):
+        print(ScanMessages[1])
+        print("OLT could not find a database!")
+        MakeDBQ = input("Allow OLT to resolve the issue? [Y/n]  ")
+        if MakeDBQ in AcceptedAnswers:
+            #Make Database file and populate it
+            MakeDB()
+            if os.path.exists(CheckPathLocation):
+                FetchAndWriteData()
+                if os.stat(CheckPathLocation).st_size == 0:
+                    print("ERROR: DATABASE COULD NOT BE POPULATED!")
+                else:
+                    print("SUCCESS: DATABASE POPULATED!")
+            else:
+                print("ERROR: FAILURE TO CREATE DB")
+        else:
+            print("No changes have been made!")
+            print("Program will now be able to run without the needed files!")
+elif not os.path.exists(CheckDirLocation):
+    print(ScanMessages[3])
+    print(ScanMessages[1])
+    MakeDBQ = input("Allow OLT to resolve the issue? [Y/n]  ")
+    if MakeDBQ in AcceptedAnswers:
+        MakeDir()
+        if os.path.exists(CheckDirLocation):
+            sp.call("clear", shell=True)
+            print("SUCCESS: DIRECTORY CREATED")
+            MakeDB()
+            if os.path.exists(CheckPathLocation):
+                print("SUCCESS: DATABASE CREATED")
+                FetchAndWriteData()
+                if os.stat(CheckPathLocation).st_size == 0:
+                    print("ERROR: DATABASE COULD NOT BE POPULATED!")
+                else: 
+                    print("SUCCESS: DATABSE POPULATED!")
+                    SearchDB()
+            else:
+                print("ERROR: DATABASE COULDN'T BE CREATED!")
+
+        else:
+            print("ERROR: DIRECTORY COULDN'T BE CREATED")
+#Check for DB in .olt!
+
+#Check that the DB has been populated!
